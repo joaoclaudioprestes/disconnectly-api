@@ -23,7 +23,7 @@ Oferece funcionalidades como:
 ### 🔧 **Rotas da API**
 
 #### **🔐 Autenticação e Usuários**
-- [] **POST /auth/register**  
+- [X] **POST /auth/register**  
   Registra um novo usuário.
 
 - [] **POST /auth/login**  
