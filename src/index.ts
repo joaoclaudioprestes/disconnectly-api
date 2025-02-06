@@ -1,14 +1,16 @@
 import fastify, { FastifyInstance } from 'fastify'
-import { ENV } from './env'
 import { user } from './routes/user.routes'
+import { env } from './env'
 
 export class App {
   private app: FastifyInstance
   private port: number
+  private host: string
 
   constructor() {
     this.app = fastify()
-    this.port = Number(ENV.PORT) || 3000
+    this.port = Number(env.PORT)
+    this.host = env.HOST
     this.config()
     this.routes()
     this.listen()
@@ -21,7 +23,7 @@ export class App {
   }
 
   listen(): void {
-    this.app.listen({ port: this.port }, () => {
+    this.app.listen({ port: this.port, host: this.host }, () => {
       console.log(`🍃 Server running on port ${this.port}`)
     })
   }

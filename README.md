@@ -26,7 +26,7 @@ Oferece funcionalidades como:
 - [X] **POST /auth/register**  
   Registra um novo usuário.
 
-- [] **POST /auth/login**  
+- [X] **POST /auth/login**  
   Realiza o login de um usuário.
 
 - [] **POST /auth/forgot-password**  

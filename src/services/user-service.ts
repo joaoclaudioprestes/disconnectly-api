@@ -1,7 +1,7 @@
 import { UserRepository } from '@/interfaces/user-interface'
 import { Prisma, User } from '@prisma/client'
 import bcryptjs from 'bcryptjs'
-import { UserAlreadyExists } from './error/user-already-exists-error'
+import { UserAlreadyExistsError } from './error/user-already-exists-error'
 
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {
@@ -12,7 +12,7 @@ export class UserService {
     const hasUser = await this.findUser(data.email)
 
     if (hasUser) {
-      throw new UserAlreadyExists()
+      throw new UserAlreadyExistsError()
     }
 
     const user = await this.userRepository.create({
