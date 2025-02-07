@@ -21,6 +21,7 @@ model User {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   token               String?
+  passwordResetToken  String?
   DisconnectionPlans  DisconnectionPlans[]
   EmergencyContacts   EmergencyContacts[]
   ProgressStatistics  ProgressStatistics[]
