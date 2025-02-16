@@ -7,15 +7,15 @@ const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   PORT: z.string().default('3000'),
-  HOST: z.string().default('localhost'),
+  HOST: z.string(),
   JWT_SECRET: z.string().default('secret'),
   SMTP_HOST: z.string(),
-  SMTP_PORT: z.number(),
+  SMTP_PORT: z.string(),
   SMTP_USER: z.string(),
   SMTP_PASSWORD: z.string(),
   SMTP_EMAIL: z.string(),
-  SMTP_GMAIL_APP_PASSWORD: z.string(),
-  SMTP_SERVICE: z.string(),
+  // SMTP_GMAIL_APP_PASSWORD: z.string(),
+  // SMTP_SERVICE: z.string(),
 })
 
 const _env = envSchema.safeParse(process.env)
