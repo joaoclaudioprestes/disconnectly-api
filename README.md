@@ -29,7 +29,7 @@ Oferece funcionalidades como:
 - [X] **POST /auth/login**  
   Realiza o login de um usuário.
 
-- [] **POST /auth/forgot-password**  
+- [X] **POST /auth/forgot-password**  
   Inicia o processo de recuperação de senha.
 
 ---
