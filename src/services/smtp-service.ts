@@ -11,15 +11,15 @@ export class SmtpService {
   private transporter = nodemailer.createTransport({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
-    service: env.SMTP_SERVICE,
+    secure: false,
     auth: {
-      user: env.SMTP_EMAIL,
-      pass: env.SMTP_GMAIL_APP_PASSWORD,
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASSWORD,
     },
     tls: {
       rejectUnauthorized: false,
     },
-  })
+  } as nodemailer.TransportOptions)
 
   public async sendEmail(data: ISmtpService): Promise<void> {
     try {
