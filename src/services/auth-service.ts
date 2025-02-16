@@ -7,6 +7,7 @@ import { InvalidPasswordError } from './error/invalid-password-error'
 import jwt from 'jsonwebtoken'
 import { env } from '@/env'
 import { SmtpService } from './smtp-service'
+import { InvalidTokenError } from './error/invalid-token-error'
 
 export class AuthService {
   constructor(
@@ -60,6 +61,44 @@ export class AuthService {
       to: email,
       subject: 'Password Recovery',
       text: `Click the link to reset your password: ${magicLink}`,
+    })
+
+    // Update user with new token
+    await this.userRepository.updateUser(user.id, {
+      passwordResetToken: token,
+    })
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    const userId = jwt.decode(token, { json: true })?.id
+
+    const user = await this.userRepository.findUserById(userId)
+
+    if (!user) {
+      throw new UserNotFoundError()
+    }
+
+    const getToken = user.passwordResetToken
+
+    if (!getToken) {
+      throw new InvalidTokenError()
+    }
+
+    const payload = jwt.verify(getToken, env.JWT_SECRET)
+
+    if (typeof payload === 'string') {
+      throw new InvalidTokenError()
+    }
+
+    await this.userRepository.updateUser(user.id, {
+      password: await bcrypt.hash(password, 10),
+      passwordResetToken: null,
+    })
+
+    this.smtp.sendEmail({
+      to: user.email,
+      subject: 'Password Updated',
+      text: 'Your password has been updated! If you did not request this change, please contact us.',
     })
   }
 }

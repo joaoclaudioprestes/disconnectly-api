@@ -1,5 +1,6 @@
 import { authMiddleware } from '@/middlewares/auth-middleware'
 import { InvalidPasswordError } from '@/services/error/invalid-password-error'
+import { InvalidTokenError } from '@/services/error/invalid-token-error'
 import { UserAlreadyExistsError } from '@/services/error/user-already-exists-error'
 import { UserNotFoundError } from '@/services/error/user-not-found'
 import { makeAuthService } from '@/services/factories/make-auth-service'
@@ -79,6 +80,71 @@ export const user = async (app: FastifyInstance) => {
       reply.status(500).send({ error: 'Internal server error' })
     }
   })
+
+  app.post(
+    '/auth/forgot-password',
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const body = z.object({
+        email: z.string().email(),
+      })
+
+      try {
+        const data = body.parse(req.body)
+
+        const authService = makeAuthService()
+
+        await authService.recoverPassword(data.email)
+
+        reply.status(204).send({ message: 'Email sent for ' + data.email })
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          reply.status(400).send({ error: error.errors[0].message })
+          return
+        }
+
+        if (error instanceof UserNotFoundError) {
+          reply.status(404).send({ error: error.message })
+          return
+        }
+
+        console.log(error)
+        reply.status(500).send({ error: 'Internal server error' })
+      }
+    },
+  )
+
+  app.post(
+    '/auth/reset-password',
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const body = z.object({
+        token: z.string(),
+        password: z.string(),
+      })
+
+      try {
+        const data = body.parse(req.body)
+
+        const authService = makeAuthService()
+
+        await authService.resetPassword(data.token, data.password)
+
+        reply.status(204).send({ message: 'Password updated' })
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          reply.status(400).send({ error: error.errors[0].message })
+          return
+        }
+
+        if (error instanceof InvalidTokenError) {
+          reply.status(400).send({ error: error.message })
+          return
+        }
+
+        console.log(error)
+        reply.status(500).send({ error: 'Internal server error' })
+      }
+    },
+  )
 
   app.get(
     '/test',
