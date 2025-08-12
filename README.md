@@ -76,3 +76,4 @@ Oferece funcionalidades como:
 ### 🚀 **Próximos Passos**
 - Expandir as sugestões de atividades com base em dados de preferências do usuário.
 - Implementar notificações automáticas para lembrar os usuários de seus planos de desconexão.
+****

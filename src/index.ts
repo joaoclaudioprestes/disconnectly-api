@@ -1,6 +1,7 @@
 import fastify, { FastifyInstance } from 'fastify'
 import { user } from './routes/user.routes'
 import { env } from './env'
+import { registerMcpHttpRoutes } from './mcp/transports/http-transport'
 
 export class App {
   private app: FastifyInstance
@@ -20,6 +21,7 @@ export class App {
 
   routes(): void {
     this.app.register(user)
+    this.app.register(registerMcpHttpRoutes)
   }
 
   listen(): void {
