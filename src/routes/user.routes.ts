@@ -1,156 +1,117 @@
-import { authMiddleware } from '@/middlewares/auth-middleware'
-import { InvalidPasswordError } from '@/services/error/invalid-password-error'
-import { InvalidTokenError } from '@/services/error/invalid-token-error'
-import { UserAlreadyExistsError } from '@/services/error/user-already-exists-error'
-import { UserNotFoundError } from '@/services/error/user-not-found'
-import { makeAuthService } from '@/services/factories/make-auth-service'
-import { makeUserService } from '@/services/factories/make-user-service'
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 
-export const user = async (app: FastifyInstance) => {
+import { authMiddleware } from '@/middlewares/auth-middleware'
+import { makeAuthService } from '@/services/factories/make-auth-service'
+import { makeUserService } from '@/services/factories/make-user-service'
+import type { FastifyTypedInstance } from '@/types/fastify'
+import { UserAlreadyExistsError } from '@/services/error/user-already-exists-error'
+import { UserNotFoundError } from '@/services/error/user-not-found'
+import { InvalidPasswordError } from '@/services/error/invalid-password-error'
+import { InvalidTokenError } from '@/services/error/invalid-token-error'
+
+export const user = async (app: FastifyTypedInstance) => {
   // Create user
   app.post(
     '/auth/register',
-    async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
-      const body = z.object({
-        name: z.string(),
-        email: z.string().email(),
-        password: z.string(),
-      })
+    {
+      schema: {
+        tags: ['Auth'],
+        body: z.object({
+          name: z.string(),
+          email: z.string().email(),
+          password: z.string(),
+        }),
+      },
+    },
+    async (req, reply) => {
+      const parsed = z
+        .object({
+          name: z.string(),
+          email: z.string().email(),
+          password: z.string(),
+        })
+        .safeParse(req.body)
+      if (!parsed.success)
+        return reply.status(400).send({ error: parsed.error.issues[0].message })
 
       try {
-        const data = body.parse(req.body)
-
-        // Create user
         const userService = makeUserService()
-
-        const user = await userService.createUser(data)
-
+        const user = await userService.createUser(parsed.data)
         reply.status(201).send(user)
       } catch (error) {
-        if (error instanceof z.ZodError) {
-          reply.status(400).send({ error: error.errors[0].message })
-          return
-        }
-
-        if (error instanceof UserAlreadyExistsError) {
-          reply.status(400).send({ error: error.message })
-          return
-        }
-
-        console.log(error)
+        if (error instanceof UserAlreadyExistsError)
+          return reply.status(400).send({ error: (error as Error).message })
+        console.error(error)
         reply.status(500).send({ error: 'Internal server error' })
       }
     },
   )
 
-  // Sing in
-  app.post('/auth/login', async (req: FastifyRequest, reply: FastifyReply) => {
-    const body = z.object({
-      email: z.string().email(),
-      password: z.string(),
-    })
+  // Sign in
+  app.post('/auth/login', async (req, reply) => {
+    const parsed = z
+      .object({ email: z.string().email(), password: z.string() })
+      .safeParse(req.body)
+    if (!parsed.success)
+      return reply.status(400).send({ error: parsed.error.issues[0].message })
 
     try {
-      const data = body.parse(req.body)
-
       const authService = makeAuthService()
-
-      const user = await authService.signIn(data.email, data.password)
-
-      return user
+      const user = await authService.signIn(
+        parsed.data.email,
+        parsed.data.password,
+      )
+      reply.send(user)
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        reply.status(400).send({ error: error.errors[0].message })
-        return
-      }
-
-      if (error instanceof UserNotFoundError) {
-        reply.status(404).send({ error: error.message })
-        return
-      }
-
-      if (error instanceof InvalidPasswordError) {
-        reply.status(400).send({ error: error.message })
-        return
-      }
-
-      console.log(error)
+      if (error instanceof UserNotFoundError)
+        return reply.status(404).send({ error: (error as Error).message })
+      if (error instanceof InvalidPasswordError)
+        return reply.status(400).send({ error: (error as Error).message })
+      console.error(error)
       reply.status(500).send({ error: 'Internal server error' })
     }
   })
 
-  app.post(
-    '/auth/forgot-password',
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const body = z.object({
-        email: z.string().email(),
-      })
+  // Forgot password
+  app.post('/auth/forgot-password', async (req, reply) => {
+    const parsed = z.object({ email: z.string().email() }).safeParse(req.body)
+    if (!parsed.success)
+      return reply.status(400).send({ error: parsed.error.issues[0].message })
 
-      try {
-        const data = body.parse(req.body)
+    try {
+      const authService = makeAuthService()
+      await authService.recoverPassword(parsed.data.email)
+      reply.status(204).send({ message: `Email sent for ${parsed.data.email}` })
+    } catch (error) {
+      if (error instanceof UserNotFoundError)
+        return reply.status(404).send({ error: (error as Error).message })
+      console.error(error)
+      reply.status(500).send({ error: 'Internal server error' })
+    }
+  })
 
-        const authService = makeAuthService()
+  // Reset password
+  app.post('/auth/reset-password', async (req, reply) => {
+    const parsed = z
+      .object({ token: z.string(), password: z.string() })
+      .safeParse(req.body)
+    if (!parsed.success)
+      return reply.status(400).send({ error: parsed.error.issues[0].message })
 
-        await authService.recoverPassword(data.email)
+    try {
+      const authService = makeAuthService()
+      await authService.resetPassword(parsed.data.token, parsed.data.password)
+      reply.status(204).send({ message: 'Password updated' })
+    } catch (error) {
+      if (error instanceof InvalidTokenError)
+        return reply.status(400).send({ error: (error as Error).message })
+      console.error(error)
+      reply.status(500).send({ error: 'Internal server error' })
+    }
+  })
 
-        reply.status(204).send({ message: 'Email sent for ' + data.email })
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          reply.status(400).send({ error: error.errors[0].message })
-          return
-        }
-
-        if (error instanceof UserNotFoundError) {
-          reply.status(404).send({ error: error.message })
-          return
-        }
-
-        console.log(error)
-        reply.status(500).send({ error: 'Internal server error' })
-      }
-    },
-  )
-
-  app.post(
-    '/auth/reset-password',
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const body = z.object({
-        token: z.string(),
-        password: z.string(),
-      })
-
-      try {
-        const data = body.parse(req.body)
-
-        const authService = makeAuthService()
-
-        await authService.resetPassword(data.token, data.password)
-
-        reply.status(204).send({ message: 'Password updated' })
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          reply.status(400).send({ error: error.errors[0].message })
-          return
-        }
-
-        if (error instanceof InvalidTokenError) {
-          reply.status(400).send({ error: error.message })
-          return
-        }
-
-        console.log(error)
-        reply.status(500).send({ error: 'Internal server error' })
-      }
-    },
-  )
-
-  app.get(
-    '/test',
-    { preHandler: authMiddleware },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      reply.send({ message: 'Hello world' })
-    },
-  )
+  // Test route
+  app.get('/test', { preHandler: authMiddleware }, async (req, reply) => {
+    reply.send({ message: 'Hello world' })
+  })
 }
