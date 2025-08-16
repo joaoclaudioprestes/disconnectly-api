@@ -14,12 +14,10 @@ const envSchema = z.object({
   SMTP_USER: z.string(),
   SMTP_PASSWORD: z.string(),
   SMTP_EMAIL: z.string(),
-  // MCP Configuration
-  MCP_SERVER_NAME: z.string().default('disconnectly-mcp-server'),
-  MCP_SERVER_VERSION: z.string().default('1.0.0'),
-  MCP_PORT: z.string().default('3001'),
-  // SMTP_GMAIL_APP_PASSWORD: z.string(),
-  // SMTP_SERVICE: z.string(),
+
+  // Gemini AI Configuration
+  GEMINI_API_KEY: z.string().optional(),
+  GOOGLE_GENAI_USE_VERTEXAI: z.string().optional(),
 })
 
 const _env = envSchema.safeParse(process.env)
